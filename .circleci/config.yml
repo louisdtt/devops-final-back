@@ -66,4 +66,4 @@ jobs:
       - run: flask test
       - run: docker container stop flask_db_test
       - run: docker container rm flask_db_test
-      - run: unset DATABASE_URL
+      - run: unset DATABASE_URL 
