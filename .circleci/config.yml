@@ -14,7 +14,7 @@ workflows:
 jobs:
   build:
     docker: &config
-      - image: python:3
+      - image: cimg/python:3.9.1
         auth:
           username: mydockerhub-user
           password: $DOCKERHUB_PASSWORD
@@ -30,7 +30,7 @@ jobs:
             - ./bin
   bddPostgres:
     docker:
-      - image: python:3
+      - image: cimg/python:3.9.1
         environment:
           DATABASE_URL: postgres://pasqualini_lucas:pswdevopstpfinal@localhost:5432/devopstpfinal
           JWT_SECRET: some string
@@ -49,12 +49,13 @@ jobs:
             - npm-v1-dependencies-{{ checksum "Pipfile.lock" }}
   test:
     docker:
-      - image: python:3
+      - image: cimg/python:3.9.1
     steps:
       - checkout
       - restore_cache:
           keys:
             - npm-v1-dependencies-{{ checksum "Pipfile.lock" }}
+      - run: sudo dockerd
       - run: su -c service docker start
       - run: service docker start
       - run: docker container run --name flask_db_test -e POSTGRES_PASSWORD=somePwd -e POSTGRES_USER=myUsr -p 5432:5432 -d postgres
