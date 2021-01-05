@@ -1,0 +1,69 @@
+version: 2.1
+workflows:
+  version: 2
+  devopsTP4:
+    jobs:
+      - build
+      - bddPostgres:
+          requires:
+            - build
+      - test:
+          requires:
+            - build
+
+jobs:
+  build:
+    docker: &config
+      - image: python:3
+        auth:
+          username: mydockerhub-user
+          password: $DOCKERHUB_PASSWORD
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - npm-v1-dependencies-{{ checksum "Pipfile.lock" }}
+      - run: pip install -r requirements/dev.txt --user
+      - save_cache:
+          key: npm-v1-dependencies-{{ checksum "Pipfile.lock" }}
+          paths:
+            - ./bin
+  bddPostgres:
+    docker:
+      - image: python:3
+        environment:
+          DATABASE_URL: postgres://pasqualini_lucas:pswdevopstpfinal@localhost:5432/devopstpfinal
+          JWT_SECRET: some string
+          API_HOST: localhost
+          API_PROTOCOL: http
+          API_PORT: 3000
+      - image: circleci/postgres:9.6.2-alpine
+        environment:
+          POSTGRES_USER: pasqualini_lucas
+          POSTGRES_DB: devopstpfinal
+          POSTGRES_PASSWORD: pswdevopstpfinal
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - npm-v1-dependencies-{{ checksum "Pipfile.lock" }}
+  test:
+    docker:
+      - image: python:3
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - npm-v1-dependencies-{{ checksum "Pipfile.lock" }}
+      - run:
+          name: install netlify
+          command: sudo dockerd
+      - run: service docker start
+      - run: docker container run --name flask_db_test -e POSTGRES_PASSWORD=somePwd -e POSTGRES_USER=myUsr -p 5432:5432 -d postgres
+      - run: sleep 1
+      - run: export DATABASE_URL=postgresql://myUsr:somePwd@localhost:5432/myUsr
+      - run: flask db upgrade
+      - run: flask test
+      - run: docker container stop flask_db_test
+      - run: docker container rm flask_db_test
+      - run: unset DATABASE_URL
