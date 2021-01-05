@@ -55,6 +55,7 @@ jobs:
       - restore_cache:
           keys:
             - npm-v1-dependencies-{{ checksum "Pipfile.lock" }}
+      - run: su -
       - run:
           name: install netlify
           command: sudo dockerd
