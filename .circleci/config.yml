@@ -67,7 +67,8 @@ jobs:
       - run: docker container run --name flask_db_test -e POSTGRES_PASSWORD=somePwd -e POSTGRES_USER=myUsr -p 5432:5432 -d postgres
       - run: sleep 1
       - run: export DATABASE_URL=postgresql://myUsr:somePwd@localhost:5432/myUsr
-      - run: cd /home/circleci | ls | flask db upgrade
+      - run: cd /home/circleci | ls 
+      - run: flask db upgrade
       - run: flask test
       - run: docker container stop flask_db_test
       - run: docker container rm flask_db_test
