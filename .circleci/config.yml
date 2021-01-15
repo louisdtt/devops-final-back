@@ -23,7 +23,7 @@ jobs:
       - restore_cache:
           keys:
             - npm-v1-dependencies-{{ checksum "Pipfile.lock" }}
-      - run: pip install -r requirements/dev.txt --user
+      - run: pip install -r requirements/prod.txt --user
       - save_cache:
           key: npm-v1-dependencies-{{ checksum "Pipfile.lock" }}
           paths:
@@ -32,14 +32,14 @@ jobs:
     docker:
       - image: cimg/python:3.9.1
         environment:
-          DATABASE_URL: postgres://pasqualini_lucas:pswdevopstpfinal@localhost:5432/devopstpfinal
+          DATABASE_URL: postgres://dutoit_louis:pswdevopstpfinal@localhost:5432/devopstpfinal
           JWT_SECRET: some string
           API_HOST: localhost
           API_PROTOCOL: http
           API_PORT: 3000
       - image: circleci/postgres:9.6.2-alpine
         environment:
-          POSTGRES_USER: pasqualini_lucas
+          POSTGRES_USER: dutoit_louis
           POSTGRES_DB: devopstpfinal
           POSTGRES_PASSWORD: pswdevopstpfinal
     steps:
