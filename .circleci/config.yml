@@ -18,6 +18,7 @@ jobs:
         auth:
           username: mydockerhub-user
           password: $DOCKERHUB_PASSWORD
+    working_directory: ~/directory
     steps:
       - checkout
       - restore_cache:
@@ -52,7 +53,7 @@ jobs:
       - image: cimg/python:3.9.1
         environment:
           CONDUIT_SECRET: 'something-really-secret'
-          FLASK_APP: /autoapp.py
+          FLASK_APP: /home/circleci/directory/autoapp.py
           FLASK_DEBUG: 1
     steps:
       - checkout
