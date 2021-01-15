@@ -23,7 +23,7 @@ jobs:
       - restore_cache:
           keys:
             - npm-v1-dependencies-{{ checksum "Pipfile.lock" }}
-      - run: pip install -r requirements/prod.txt --user
+      - run: pip install -r requirements/dev.txt --user
       - save_cache:
           key: npm-v1-dependencies-{{ checksum "Pipfile.lock" }}
           paths:
@@ -56,6 +56,7 @@ jobs:
       - restore_cache:
           keys:
             - npm-v1-dependencies-{{ checksum "Pipfile.lock" }}
+      - run: pip install Flask
       - run: docker container run --name flask_db_test -e POSTGRES_PASSWORD=somePwd -e POSTGRES_USER=myUsr -p 5432:5432 -d postgres
       - run: sleep 1
       - run: export DATABASE_URL=postgresql://myUsr:somePwd@localhost:5432/myUsr
