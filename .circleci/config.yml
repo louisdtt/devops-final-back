@@ -52,10 +52,10 @@ jobs:
       - image: cimg/python:3.9.1
     steps:
       - checkout
+      - setup_remote_docker
       - restore_cache:
           keys:
             - npm-v1-dependencies-{{ checksum "Pipfile.lock" }}
-      - run: sudo service docker start
       - run: docker container run --name flask_db_test -e POSTGRES_PASSWORD=somePwd -e POSTGRES_USER=myUsr -p 5432:5432 -d postgres
       - run: sleep 1
       - run: export DATABASE_URL=postgresql://myUsr:somePwd@localhost:5432/myUsr
