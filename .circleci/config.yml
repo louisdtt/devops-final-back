@@ -61,6 +61,7 @@ jobs:
       - restore_cache:
           keys:
             - npm-v1-dependencies-{{ checksum "Pipfile.lock" }}
+      - run: cd /home/circleci | ls
       - run: pip install Flask
       - run: pip install Flask-Migrate
       - run: docker container run --name flask_db_test -e POSTGRES_PASSWORD=somePwd -e POSTGRES_USER=myUsr -p 5432:5432 -d postgres
