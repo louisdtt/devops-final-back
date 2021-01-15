@@ -23,12 +23,18 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - npm-v1-dependencies-{{ checksum "Pipfile.lock" }}
-      - run: pip install -r requirements/dev.txt --user
+            - python-v1-dependencies-{{ checksum "Pipfile.lock" }}
+      - run:
+          name: install python and dependencies
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            pip install -r requirements/dev.txt
       - save_cache:
-          key: npm-v1-dependencies-{{ checksum "Pipfile.lock" }}
+          key: python-v1-dependencies-{{ checksum "Pipfile.lock" }}
           paths:
             - ./bin
+     
   bddPostgres:
     docker:
       - image: cimg/python:3.9.1
@@ -47,7 +53,7 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - npm-v1-dependencies-{{ checksum "Pipfile.lock" }}
+            - python-v1-dependencies-{{ checksum "Pipfile.lock" }}
   test:
     docker:
       - image: cimg/python:3.9.1
@@ -60,14 +66,14 @@ jobs:
       - setup_remote_docker
       - restore_cache:
           keys:
-            - npm-v1-dependencies-{{ checksum "Pipfile.lock" }}
+            - python-v1-dependencies-{{ checksum "Pipfile.lock" }}
       - run: cd /home/circleci | ls
       - run: pip install Flask
       - run: pip install Flask-Migrate
       - run: docker container run --name flask_db_test -e POSTGRES_PASSWORD=somePwd -e POSTGRES_USER=myUsr -p 5432:5432 -d postgres
       - run: sleep 1
       - run: export DATABASE_URL=postgresql://myUsr:somePwd@localhost:5432/myUsr
-      - run: ls 
+      - run:  . venv/bin/activate 
       - run: flask db upgrade
       - run: flask test
       - run: docker container stop flask_db_test
