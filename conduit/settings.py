@@ -25,7 +25,8 @@ class Config(object):
         'http://localhost:4200',
         'http://0.0.0.0:4000',
         'http://localhost:4000',
-        'https://devops-final-front.netlify.app'
+        'https://devops-final-heroku.herokuapp.com/',
+        'https://devops-final-heroku.herokuapp.com/api/articles'
     ]
     JWT_HEADER_TYPE = 'Token'
 
