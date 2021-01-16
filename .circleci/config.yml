@@ -39,7 +39,7 @@ jobs:
     docker:
       - image: cimg/python:3.9.1
         environment:
-          DATABASE_URL: postgres://dutoit_louis:pswdevopstpfinal@localhost:5432/devopstpfinal
+          DATABASE_URL: postgres://uotgxcdmfmxbwe:e8c34507f65de2c63ff94c44603c2fa2e63946b0f752e2c2d9653afa64f77f9c@ec2-54-217-224-85.eu-west-1.compute.amazonaws.com:5432/df4rqvara5ij8l
           JWT_SECRET: some string
           API_HOST: localhost
           API_PROTOCOL: http
