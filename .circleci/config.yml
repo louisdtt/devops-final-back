@@ -3,79 +3,72 @@ workflows:
   version: 2
   devopsTP4:
     jobs:
-      - build
-      - bddPostgres:
-          requires:
-            - build
-      - test:
-          requires:
-            - build
-
+      - install
+      - back-deploy-heroku
 jobs:
-  build:
-    docker: &config
+  install:
+    docker:
       - image: cimg/python:3.9.1
-        auth:
-          username: mydockerhub-user
-          password: $DOCKERHUB_PASSWORD
-    working_directory: ~/directory
+      - image: circleci/postgres:9.6.2
+    working_directory: ~/repo
     steps:
       - checkout
+      - setup_remote_docker
       - restore_cache:
           keys:
-            - python-v1-dependencies-{{ checksum "Pipfile.lock" }}
+            - dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/prod.txt" }}
+            - dependencies-
       - run:
           name: install python and dependencies
           command: |
             python3 -m venv venv
             . venv/bin/activate
             pip install -r requirements/dev.txt
-      - save_cache:
-          key: python-v1-dependencies-{{ checksum "Pipfile.lock" }}
-          paths:
-            - ./bin
-     
-  bddPostgres:
-    docker:
-      - image: cimg/python:3.9.1
-        environment:
-          DATABASE_URL: postgres://uotgxcdmfmxbwe:e8c34507f65de2c63ff94c44603c2fa2e63946b0f752e2c2d9653afa64f77f9c@ec2-54-217-224-85.eu-west-1.compute.amazonaws.com:5432/df4rqvara5ij8l
-          JWT_SECRET: some string
-          API_HOST: localhost
-          API_PROTOCOL: http
-          API_PORT: 3000
-      - image: circleci/postgres:9.6.2-alpine
-        environment:
-          POSTGRES_USER: dutoit_louis
-          POSTGRES_DB: devopstpfinal
-          POSTGRES_PASSWORD: pswdevopstpfinal
-    steps:
-      - checkout
-      - restore_cache:
-          keys:
-            - python-v1-dependencies-{{ checksum "Pipfile.lock" }}
-  test:
-    docker:
-      - image: cimg/python:3.9.1
-        environment:
-          CONDUIT_SECRET: 'something-really-secret'
-          FLASK_APP: /home/circleci/autoapp.py
-          FLASK_DEBUG: 1
-    steps:
-      - checkout
-      - setup_remote_docker
-      - restore_cache:
-          keys:
-            - python-v1-dependencies-{{ checksum "Pipfile.lock" }}
-      - run: cd /home/circleci | ls
-      - run: pip install Flask
-      - run: pip install Flask-Migrate
+      
       - run: docker container run --name flask_db_test -e POSTGRES_PASSWORD=somePwd -e POSTGRES_USER=myUsr -p 5432:5432 -d postgres
       - run: sleep 1
-      - run: export DATABASE_URL=postgresql://myUsr:somePwd@localhost:5432/myUsr
-      - run:  . venv/bin/activate 
-      - run: flask db upgrade
-      - run: flask test
+      - run:
+          name: db upgrade
+          environment:
+            FLASK_APP: /home/circleci/repo/autoapp.py
+            FLASK_DEBUG: 0
+            POSTGRES_USER: postgres
+            POSTGRES_DB: bdtest
+            POSTGRES_PASSWORD: somePwd
+            POSTGRES_PORT: 5432
+            DATABASE_URL: postgresql://postgres:somePwd@localhost:5432/postgres
+          command: |
+            . venv/bin/activate
+            flask db upgrade
+      - run:
+          name: flask test
+          environment:
+            FLASK_APP: /home/circleci/repo/autoapp.py
+            FLASK_DEBUG: 0
+            POSTGRES_USER: postgres
+            POSTGRES_DB: bdtest
+            POSTGRES_PASSWORD: somePwd
+            POSTGRES_PORT: 5432
+            DATABASE_URL: postgresql://postgres:somePwd@localhost:5432/postgres
+          command: |
+            . venv/bin/activate
+            flask test
       - run: docker container stop flask_db_test
       - run: docker container rm flask_db_test
-      - run: unset DATABASE_URL 
+      - run: unset DATABASE_URL
+  back-deploy-heroku:
+    docker:
+      - image: buildpack-deps:trusty
+    steps:
+      - checkout
+      - run:
+          name: Heroku Deploy
+          command: git push https://heroku:$HEROKU_API_KEY@git.heroku.com/$HEROKU_APP_NAME.git HEAD:main
+      - run:
+          name: Smoke Test
+          command: |
+            HTTPCODE=`curl -s -o /dev/null -w "%{http_code}" https://devops-back-final.herokuapp.com//`
+            if [[ "$HTTPCODE" -ne 200 ]]; then
+              echo "heroku app not responding, failing deploy" \
+              exit 1; \
+            fi
