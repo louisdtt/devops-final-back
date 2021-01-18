@@ -16,7 +16,6 @@ jobs:
       - restore_cache:
           keys:
             - dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/prod.txt" }}
-            - dependencies-
       - run: 
           name: Install dependencies
           command: pip install -r requirements/dev.txt
