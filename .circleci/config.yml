@@ -16,10 +16,12 @@ jobs:
       - restore_cache:
           keys:
             - dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/prod.txt" }}
+            # Fallback to using the latest cache if no exact match is found
+            - dependencies-
       - run: 
           name: Install dependencies
           command: pip install -r requirements/dev.txt
-      # Upgrade Dependencies
+      # Upgrade dependencies for sqlalchemy and Flask-SQLAlchemy to pass unit tests
       - run:
           command: pip install sqlalchemy --upgrade && pip install Flask-SQLAlchemy --upgrade
       - run: 
@@ -34,7 +36,7 @@ jobs:
             FLASK_APP: /home/circleci/repo/autoapp.py
             FLASK_DEBUG: 0
           command: flask test
-  deploy-heroku:
+  back-deploy-heroku:
     docker:
       - image: buildpack-deps:trusty
     steps:
@@ -45,7 +47,7 @@ jobs:
       - run:
           name: Smoke Test
           command: |
-            HTTPCODE=`curl -s -o /dev/null -w "%{http_code}" https://devops-final-heroku.herokuapp.com/`
+            HTTPCODE=`curl -s -o /dev/null -w "%{http_code}" https://$HEROKU_APP_NAME.herokuapp.com/`
             if [[ "$HTTPCODE" -ne 200 ]]; then
               echo "heroku app not responding, failing deploy" \
               exit 1; \
@@ -73,7 +75,7 @@ workflows:
   build-test:
     jobs:
       - install
-      - deploy-heroku:
+      - back-deploy-heroku:
           requires:
             - install
       - docker-build-and-push:
