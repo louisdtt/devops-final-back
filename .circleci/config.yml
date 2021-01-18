@@ -4,8 +4,13 @@ workflows:
   devopsTP4:
     jobs:
       - install
-      - back-deploy-heroku
-      - docker-build-and-push
+      - back-deploy-heroku:
+          requires:
+            - install
+      - docker-build-and-push:
+          requires:
+            - install
+
 jobs:
   install:
     docker:
@@ -18,6 +23,7 @@ jobs:
       - restore_cache:
           keys:
             - dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/prod.txt" }}
+            - dependencies-
       - run:
           name: install python and dependencies
           command: |
@@ -28,7 +34,7 @@ jobs:
       - run: docker container run --name flask_db_test -e POSTGRES_PASSWORD=somePwd -e POSTGRES_USER=myUsr -p 5432:5432 -d postgres
       - run: sleep 1
       - run:
-          name: db upgrade
+          name: db migration
           environment:
             FLASK_APP: /home/circleci/repo/autoapp.py
             FLASK_DEBUG: 0
@@ -39,8 +45,33 @@ jobs:
             DATABASE_URL: postgresql://postgres:somePwd@localhost:5432/postgres
           command: |
             . venv/bin/activate
-            flask db upgrade
-            
+            flask db stamp head
+      - run:
+          name: db migration
+          environment:
+            FLASK_APP: /home/circleci/repo/autoapp.py
+            FLASK_DEBUG: 0
+            POSTGRES_USER: postgres
+            POSTGRES_DB: bdtest
+            POSTGRES_PASSWORD: somePwd
+            POSTGRES_PORT: 5432
+            DATABASE_URL: postgresql://postgres:somePwd@localhost:5432/postgres
+          command: |
+            . venv/bin/activate
+            flask db migrate
+      # - run:
+      #     name: db upgrade
+      #     environment:
+      #       FLASK_APP: /home/circleci/repo/autoapp.py
+      #       FLASK_DEBUG: 0
+      #       POSTGRES_USER: postgres
+      #       POSTGRES_DB: bdtest
+      #       POSTGRES_PASSWORD: somePwd
+      #       POSTGRES_PORT: 5432
+      #       DATABASE_URL: postgresql://postgres:somePwd@localhost:5432/postgres
+      #     command: |
+      #       . venv/bin/activate
+      #       flask db upgrade
       # - run:
       #     name: flask test
       #     environment:
@@ -68,7 +99,7 @@ jobs:
       - run:
           name: Smoke Test
           command: |
-            HTTPCODE=`curl -s -o /dev/null -w "%{http_code}" https://devops-final-heroku.herokuapp.com/`
+            HTTPCODE=`curl -s -o /dev/null -w "%{http_code}" https://devops-final-heroku.herokuapp.com/api/articles`
             if [[ "$HTTPCODE" -ne 200 ]]; then
               echo "heroku app not responding, failing deploy" \
               exit 1; \
